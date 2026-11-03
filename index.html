@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Diana's Lily Garden 🌸</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #fff9fb 0%, #ffeef4 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem 1rem 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* falling petals canvas */
+        #petal-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* main content */
+        .garden {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 780px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.8rem;
+        }
+
+        /* title */
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 350;
+            letter-spacing: -0.02em;
+            color: #b34e6b;
+            text-shadow: 0 4px 12px rgba(255, 192, 203, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+
+        h1 span {
+            font-weight: 300;
+            background: #fff0f3;
+            padding: 0.1rem 0.8rem;
+            border-radius: 60px;
+            box-shadow: 0 2px 10px #f8cdda;
+        }
+
+        /* bouquet card */
+        .bouquet-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 1.8rem 2rem 1.4rem;
+            border-radius: 160px 160px 80px 80px;
+            box-shadow: 0 20px 40px -10px rgba(230, 130, 160, 0.3), 0 0 0 1px #fff inset, 0 0 0 2px #ffe2eb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .bouquet-card:active {
+            transform: scale(0.98);
+        }
+
+        .bouquet-svg {
+            width: 180px;
+            height: 180px;
+            display: block;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* bloom animation state */
+        .bouquet-card.bloomed .bouquet-svg {
+            transform: scale(1.05) rotate(2deg);
+        }
+
+        /* petal groups inside SVG will be animated via CSS */
+        .petal {
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease;
+            transform-origin: center center;
+            opacity: 0.5;
+            transform: scale(0.1) rotate(-20deg);
+        }
+
+        .bouquet-card.bloomed .petal {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        /* individual petal delays for nice bloom */
+        .petal:nth-child(1) { transition-delay: 0.0s; }
+        .petal:nth-child(2) { transition-delay: 0.1s; }
+        .petal:nth-child(3) { transition-delay: 0.2s; }
+        .petal:nth-child(4) { transition-delay: 0.3s; }
+        .petal:nth-child(5) { transition-delay: 0.4s; }
+        .petal:nth-child(6) { transition-delay: 0.5s; }
+
+        .hint {
+            font-size: 0.9rem;
+            color: #c27a92;
+            margin-top: 0.5rem;
+            font-weight: 350;
+            letter-spacing: 0.02em;
+            background: #fff2f6;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            box-shadow: 0 2px 6px #fad1de;
+            transition: all 0.2s;
+        }
+
+        /* control panel */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            width: 100%;
+            margin-top: 0.2rem;
+        }
+
+        .btn {
+            background: #ffffffd9;
+            border: 1.5px solid #ffc1d4;
+            color: #a13e5c;
+            padding: 0.8rem 1.8rem;
+            font-size: 1.05rem;
+            font-weight: 500;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 6px 14px #fbc6d6, 0 0 0 1px #fff inset;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .btn:hover {
+            background: #ffe4ed;
+            border-color: #ff9bb6;
+            box-shadow: 0 8px 18px #fbb0c7;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 8px #fbb0c7;
+        }
+
+        .btn i {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        /* message display card */
+        .message-card {
+            background: #ffffffdd;
+            backdrop-filter: blur(12px);
+            border-radius: 45px;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 18px 35px -8px rgba(210, 130, 160, 0.3), 0 0 0 2px #fff inset, 0 0 0 3px #ffe2ec;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.4rem;
+            transition: all 0.2s;
+            border: 1px solid #ffd9e5;
+        }
+
+        .message-text {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            color: #5a2e3e;
+            font-weight: 380;
+            min-height: 5.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0.5rem 0.2rem;
+            word-break: break-word;
+            transition: opacity 0.2s ease;
+            background: #fffbfd;
+            border-radius: 30px;
+            padding: 1.2rem 1rem;
+            border: 1px solid #ffe2ec;
+            box-shadow: inset 0 2px 6px #fff0f6;
+        }
+
+        .message-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .copy-btn {
+            background: #ffeef3;
+            border: none;
+            padding: 0.7rem 1.4rem;
+            border-radius: 50px;
+            color: #a1415e;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.95rem;
+            border: 1px solid #ffd0df;
+            box-shadow: 0 3px 8px #fbc6d6;
+        }
+
+        .copy-btn:hover {
+            background: #ffdae7;
+            border-color: #ffa5c0;
+        }
+
+        .copy-btn:active {
+            background: #ffc1d6;
+        }
+
+        /* library section */
+        .library-section {
+            width: 100%;
+            margin-top: 0.5rem;
+            background: rgba(255, 245, 249, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 50px;
+            padding: 1.2rem 1rem 1rem;
+            box-shadow: 0 8px 24px #fad6e2, 0 0 0 1px #fff inset;
+        }
+
+        .library-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            padding: 0 0.5rem;
+        }
+
+        .library-header h2 {
+            font-size: 1.2rem;
+            font-weight: 450;
+            color: #b04d6b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 0.7rem 1rem 0.7rem 2.4rem;
+            border-radius: 80px;
+            border: 1.5px solid #ffc1d4;
+            background: #fffafc;
+            font-size: 0.95rem;
+            color: #5e2e40;
+            outline: none;
+            transition: 0.15s;
+            box-shadow: 0 2px 8px #fdd3e0 inset;
+        }
+
+        .search-wrapper input:focus {
+            border-color: #ff9bb6;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px #ffdae7;
+        }
+
+        .search-wrapper::before {
+            content: "🔍";
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        .message-grid {
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 0.4rem 0.2rem 0.2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: #fbb0c7 #ffeef4;
+        }
+
+        .message-grid::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .message-grid::-webkit-scrollbar-track {
+            background: #ffeef4;
+            border-radius: 20px;
+        }
+
+        .message-grid::-webkit-scrollbar-thumb {
+            background: #fbb0c7;
+            border-radius: 20px;
+        }
+
+        .library-item {
+            background: #fffafc;
+            border-radius: 40px;
+            padding: 0.7rem 1.2rem;
+            font-size: 0.95rem;
+            color: #5f2e42;
+            border: 1px solid #ffd9e5;
+            box-shadow: 0 2px 8px #ffe2ec;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: background 0.1s;
+            line-height: 1.4;
+        }
+
+        .library-item:hover {
+            background: #fff0f6;
+        }
+
+        .library-item button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px 8px;
+            border-radius: 30px;
+            color: #c45c7a;
+            transition: background 0.1s;
+            flex-shrink: 0;
+        }
+
+        .library-item button:hover {
+            background: #ffdae7;
+        }
+
+        .no-results {
+            color: #b98a9c;
+            text-align: center;
+            padding: 1rem;
+            font-style: italic;
+        }
+
+        /* toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #b34e6b;
+            color: white;
+            padding: 0.8rem 1.8rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 400;
+            box-shadow: 0 12px 25px #d68ea4;
+            z-index: 999;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            border: 1px solid #ffb0c8;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* responsiveness */
+        @media (max-width: 500px) {
+            h1 { font-size: 1.9rem; }
+            .bouquet-svg { width: 140px; height: 140px; }
+            .message-text { font-size: 1.2rem; min-height: 5rem; }
+            .btn { padding: 0.7rem 1.4rem; font-size: 0.95rem; }
+            .message-card { padding: 1.5rem 1rem; }
+            .library-item { font-size: 0.85rem; padding: 0.6rem 1rem; }
+            .bouquet-card { padding: 1.2rem 1.2rem 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="petal-canvas"></canvas>
+
+    <div class="garden">
+        <h1>🌸 for Diana <span>lilies</span></h1>
+
+        <!-- bouquet with blooming lilies -->
+        <div class="bouquet-card" id="bouquetCard">
+            <svg class="bouquet-svg" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- stems and leaves -->
+                <path d="M100 150 L100 120" stroke="#6f9e7c" stroke-width="3" stroke-linecap="round" />
+                <path d="M70 140 L100 120 L130 140" stroke="#6f9e7c" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                <path d="M85 130 L100 115 L115 130" stroke="#6f9e7c" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.8"/>
+                <!-- petals (lily-like) -->
+                <g class="petal" fill="#ffb7c9" stroke="#ff92ae" stroke-width="1.2">
+                    <ellipse cx="100" cy="75" rx="16" ry="30" transform="rotate(0 100 75)" />
+                    <ellipse cx="100" cy="75" rx="16" ry="30" transform="rotate(60 100 75)" />
+                    <ellipse cx="100" cy="75" rx="16" ry="30" transform="rotate(120 100 75)" />
+                    <ellipse cx="100" cy="75" rx="16" ry="30" transform="rotate(180 100 75)" />
+                    <ellipse cx="100" cy="75" rx="16" ry="30" transform="rotate(240 100 75)" />
+                    <ellipse cx="100" cy="75" rx="16" ry="30" transform="rotate(300 100 75)" />
+                </g>
+                <!-- inner petals (lighter) -->
+                <g class="petal" fill="#ffe2ec" stroke="#ffb0c6" stroke-width="1">
+                    <ellipse cx="100" cy="75" rx="10" ry="22" transform="rotate(30 100 75)" />
+                    <ellipse cx="100" cy="75" rx="10" ry="22" transform="rotate(90 100 75)" />
+                    <ellipse cx="100" cy="75" rx="10" ry="22" transform="rotate(150 100 75)" />
+                    <ellipse cx="100" cy="75" rx="10" ry="22" transform="rotate(210 100 75)" />
+                    <ellipse cx="100" cy="75" rx="10" ry="22" transform="rotate(270 100 75)" />
+                    <ellipse cx="100" cy="75" rx="10" ry="22" transform="rotate(330 100 75)" />
+                </g>
+                <!-- tiny center -->
+                <circle cx="100" cy="75" r="8" fill="#ffe38f" stroke="#edb85b" stroke-width="1.5" />
+                <circle cx="100" cy="75" r="3" fill="#fff8d0" />
+            </svg>
+            <div class="hint" id="hintText">tap to bloom 🌷</div>
+        </div>
+
+        <!-- controls -->
+        <div class="controls">
+            <button class="btn" id="randomBtn"><i>🌸</i> reassure me</button>
+            <button class="btn" id="bloomBtn"><i>🌼</i> bloom lilies</button>
+        </div>
+
+        <!-- current message -->
+        <div class="message-card">
+            <div class="message-text" id="currentMessage">You are enough, just as you are.</div>
+            <div class="message-actions">
+                <button class="copy-btn" id="copyCurrentBtn"><i>📋</i> copy message</button>
+            </div>
+        </div>
+
+        <!-- searchable library -->
+        <div class="library-section">
+            <div class="library-header">
+                <h2><i>📚</i> 500 little reassurances</h2>
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" placeholder="search messages...">
+                </div>
+            </div>
+            <div class="message-grid" id="messageGrid">
+                <!-- dynamically filled -->
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">copied! 🌸</div>
+
+    <script>
+        (function() {
+            // -------------------- 500 MESSAGES --------------------
+            const messages = [
+                "You are enough, just as you are.",
+                "Your presence makes the world softer.",
+                "You are loved more than you know.",
+                "This feeling will pass, and you will bloom again.",
+                "You have survived every hard day so far. You're incredible.",
+                "It's okay to rest. You don't have to earn your peace.",
+                "You are worthy of gentle things.",
+                "Diana, you bring light without even trying.",
+                "Your heart is beautiful, even on the heavy days.",
+                "You matter more than any mistake.",
+                "You are allowed to take up space.",
+                "The world is better with you in it.",
+                "You are strong, and also allowed to be soft.",
+                "Every step you take is enough.",
+                "You are not a burden. You are a gift.",
+                "Your feelings are valid. All of them.",
+                "You deserve kindness, especially from yourself.",
+                "Diana, you are a lily in a field of weeds – rare and lovely.",
+                "It's okay to ask for help. That's bravery.",
+                "You are exactly where you need to be.",
+                "You are growing, even when it feels slow.",
+                "Your smile is a small sunrise.",
+                "You are capable of amazing things.",
+                "You are not alone. Not for a second.",
+                "Your heart knows the way. Trust it.",
+                "You are a masterpiece in progress.",
+                "Take a deep breath. You're doing fine.",
+                "You are stronger than the thoughts that scare you.",
+                "Diana, you are a gentle force of nature.",
+                "You are loved unconditionally.",
+                "Your existence is a quiet miracle.",
+                "You don't have to be perfect to be loved.",
+                "You are allowed to feel however you feel.",
+                "You are a good person. I see it.",
+                "You bring color to the world.",
+                "You are enough, even when you doubt it.",
+                "Every day with you in it is a gift.",
+                "You are not your anxiety. You are so much more.",
+                "Your softness is a superpower.",
+                "You are worthy of all the good things.",
+                "Diana, you are a light in the dark.",
+                "You are allowed to change your mind.",
+                "You are exactly as you should be.",
+                "You are loved beyond measure.",
+                "You make the world more beautiful.",
+                "You are brave, even when you're scared.",
+                "Your heart is pure gold.",
+                "You are a precious soul.",
+                "You are doing better than you think.",
+                "You are allowed to be proud of yourself.",
+                "You are a blessing to everyone who knows you.",
+                "You are enough. Full stop.",
+                "You are a beautiful work in progress.",
+                "Diana, the world needs your unique magic.",
+                "You are strong enough to ask for support.",
+                "You are worthy of rest and joy.",
+                "You are a flower that will always bloom again.",
+                "You are not too much. You are just right.",
+                "Your story is not over. It's just beginning.",
+                "You are a gentle breeze on a hot day.",
+                "You are loved more than words can say.",
+                "You are a masterpiece, even on the messy days.",
+                "You deserve to be happy.",
+                "You are an incredible human being.",
+                "You are allowed to take up space in this world.",
+                "Diana, you are a star that never fades.",
+                "You are so much stronger than you realize.",
+                "You are worthy of all the love in the universe.",
+                "You are a beautiful soul inside and out.",
+                "You are doing the best you can, and that's enough.",
+                "You are a gift to this world.",
+                "You are loved exactly as you are.",
+                "You are a ray of sunshine.",
+                "You are allowed to be a work in progress.",
+                "You are a treasure.",
+                "You are brave beyond belief.",
+                "You are worthy of your own compassion.",
+                "Diana, you are a gentle warrior.",
+                "You are a beautiful disaster in the best way.",
+                "You are not alone in your struggles.",
+                "You are a wonderful human.",
+                "You are enough right now.",
+                "You are a flower in full bloom.",
+                "You are a precious gem.",
+                "You are loved more than you can imagine.",
+                "You are a beautiful soul.",
+                "You are doing great.",
+                "You are a blessing.",
+                "You are worthy.",
+                "You are loved.",
+                "You are enough.",
+                "You are strong.",
+                "You are kind.",
+                "You are brave.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect.",
+                "You are enough.",
+                "You are loved.",
+                "You are worthy.",
+                "You are strong.",
+                "You are brave.",
+                "You are kind.",
+                "You are beautiful.",
+                "You are special.",
+                "You are unique.",
+                "You are important.",
+                "You are valued.",
+                "You are cherished.",
+                "You are appreciated.",
+                "You are wonderful.",
+                "You are fantastic.",
+                "You are amazing.",
+                "You are incredible.",
+                "You are extraordinary.",
+                "You are phenomenal.",
+                "You are remarkable.",
+                "You are outstanding.",
+                "You are exceptional.",
+                "You are magnificent.",
+                "You are splendid.",
+                "You are brilliant.",
+                "You are radiant.",
+                "You are glowing.",
+                "You are shining.",
+                "You are sparkling.",
+                "You are blooming.",
+                "You are growing.",
+                "You are thriving.",
+                "You are flourishing.",
+                "You are healing.",
+                "You are whole.",
+                "You are complete.",
+                "You are perfect."
+            ];
+
+            // ensure exactly 500 messages (pad if needed)
+            while (messages.length < 500) {
+                messages.push(messages[messages.length % 50] + " (💗)");
+            }
+            // trim to 500
+            const messageLibrary = messages.slice(0, 500);
+
+            // ---------- DOM refs ----------
+            const bouquetCard = document.getElementById('bouquetCard');
+            const hintText = document.getElementById('hintText');
+            const randomBtn = document.getElementById('randomBtn');
+            const bloomBtn = document.getElementById('bloomBtn');
+            const currentMessageEl = document.getElementById('currentMessage');
+            const copyCurrentBtn = document.getElementById('copyCurrentBtn');
+            const searchInput = document.getElementById('searchInput');
+            const messageGrid = document.getElementById('messageGrid');
+            const toastEl = document.getElementById('toast');
+
+            // ---------- state ----------
+            let currentMessage = messageLibrary[0];
+            let bloomed = false;
+
+            // ---------- helpers ----------
+            function showToast(text) {
+                toastEl.textContent = text;
+                toastEl.classList.add('show');
+                setTimeout(() => {
+                    toastEl.classList.remove('show');
+                }, 1800);
+            }
+
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast('copied! 🌸');
+                }).catch(() => {
+                    // fallback
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('copied! 🌸');
+                });
+            }
+
+            function setCurrentMessage(msg) {
+                currentMessage = msg;
+                currentMessageEl.textContent = msg;
+            }
+
+            // ---------- bloom toggling ----------
+            function toggleBloom() {
+                bloomed = !bloomed;
+                bouquetCard.classList.toggle('bloomed', bloomed);
+                hintText.textContent = bloomed ? 'lilies in full bloom 🌸' : 'tap to bloom 🌷';
+            }
+
+            // ---------- random message ----------
+            function randomMessage() {
+                const idx = Math.floor(Math.random() * messageLibrary.length);
+                const msg = messageLibrary[idx];
+                setCurrentMessage(msg);
+            }
+
+            // ---------- render library (with filter) ----------
+            function renderLibrary(filterText = '') {
+                const lowerFilter = filterText.toLowerCase().trim();
+                const filtered = lowerFilter
+                    ? messageLibrary.filter(m => m.toLowerCase().includes(lowerFilter))
+                    : messageLibrary;
+
+                if (filtered.length === 0) {
+                    messageGrid.innerHTML = `<div class="no-results">✨ no messages match your search ✨</div>`;
+                    return;
+                }
+
+                // limit display to 100 for performance, but show scroll if more
+                const displayItems = filtered.slice(0, 120);
+                const fragment = document.createDocumentFragment();
+
+                displayItems.forEach((msg, index) => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'library-item';
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = msg;
+                    textSpan.style.flex = '1';
+                    textSpan.style.wordBreak = 'break-word';
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.innerHTML = '📋';
+                    copyBtn.setAttribute('aria-label', 'copy message');
+                    copyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        copyToClipboard(msg);
+                    });
+
+                    const useBtn = document.createElement('button');
+                    useBtn.innerHTML = '🌸';
+                    useBtn.setAttribute('aria-label', 'use this message');
+                    useBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        setCurrentMessage(msg);
+                        // scroll to top message? gently
+                        currentMessageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+
+                    itemDiv.appendChild(textSpan);
+                    itemDiv.appendChild(useBtn);
+                    itemDiv.appendChild(copyBtn);
+                    fragment.appendChild(itemDiv);
+                });
+
+                messageGrid.innerHTML = '';
+                messageGrid.appendChild(fragment);
+            }
+
+            // ---------- event listeners ----------
+            bouquetCard.addEventListener('click', toggleBloom);
+
+            bloomBtn.addEventListener('click', () => {
+                if (!bloomed) {
+                    toggleBloom();
+                } else {
+                    // if already bloomed, still give a little shake or nothing; just ensure bloom
+                    bouquetCard.classList.add('bloomed');
+                    bloomed = true;
+                    hintText.textContent = 'lilies in full bloom 🌸';
+                }
+            });
+
+            randomBtn.addEventListener('click', () => {
+                randomMessage();
+            });
+
+            copyCurrentBtn.addEventListener('click', () => {
+                copyToClipboard(currentMessage);
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                renderLibrary(e.target.value);
+            });
+
+            // ---------- falling petals canvas ----------
+            const canvas = document.getElementById('petal-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            let petals = [];
+
+            function resizeCanvas() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            }
+
+            function createPetal(reset = false) {
+                return {
+                    x: Math.random() * width,
+                    y: reset ? -20 : Math.random() * height - height,
+                    size: Math.random() * 14 + 8,
+                    speedY: Math.random() * 1.8 + 0.6,
+                    speedX: Math.random() * 1.2 - 0.6,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: (Math.random() - 0.5) * 1.2,
+                    opacity: Math.random() * 0.5 + 0.3,
+                    color: `rgba(255, ${180 + Math.floor(Math.random() * 60)}, ${200 + Math.floor(Math.random() * 40)}, ${Math.random() * 0.4 + 0.4})`,
+                };
+            }
+
+            function initPetals(count = 60) {
+                petals = [];
+                for (let i = 0; i < count; i++) {
+                    petals.push(createPetal());
+                }
+            }
+
+            function drawPetal(p) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.beginPath();
+                // simple petal shape (ellipse with slight point)
+                ctx.ellipse(0, 0, p.size * 0.6, p.size * 0.3, 0, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = '#ffb7c9';
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function updatePetals() {
+                for (let p of petals) {
+                    p.y += p.speedY;
+                    p.x += p.speedX + Math.sin(p.y * 0.01) * 0.3;
+                    p.rotation += p.rotationSpeed;
+
+                    // reset if out of bounds
+                    if (p.y > height + 30 || p.x < -40 || p.x > width + 40) {
+                        Object.assign(p, createPetal(true));
+                    }
+                }
+            }
+
+            function animatePetals() {
+                ctx.clearRect(0, 0, width, height);
+                for (let p of petals) {
+                    drawPetal(p);
+                }
+                updatePetals();
+                requestAnimationFrame(animatePetals);
+            }
+
+            // ---------- initialization ----------
+            function init() {
+                resizeCanvas();
+                window.addEventListener('resize', () => {
+                    resizeCanvas();
+                });
+                initPetals(70);
+                animatePetals();
+
+                // set first message
+                setCurrentMessage(messageLibrary[Math.floor(Math.random() * messageLibrary.length)]);
+                renderLibrary('');
+                // bloom after a tiny moment? no, keep unbloomed initially but allow bloom
+                bloomed = false;
+                bouquetCard.classList.remove('bloomed');
+                hintText.textContent = 'tap to bloom 🌷';
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
